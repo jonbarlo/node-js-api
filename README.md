@@ -274,7 +274,7 @@ To add linting, you can use ESLint. First, install ESLint and its TypeScript sup
 ```bash
 npm install --save-dev eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin
 ```
-Then, create an ESLint configuration file `.eslintrc.js` in the root directory:
+ESLint v9+ expects the config file to be named `eslint.config.js` instead of .eslintrc.js.
 ```javascript
 module.exports = {
     parser: '@typescript-eslint/parser',
@@ -296,7 +296,7 @@ Add a lint script to your `package.json`:
 ```json
 {
   "scripts": {
-    "lint": "eslint 'src/**/*.{ts,tsx}'"
+    "lint": "eslint 'src/**/**/*.{ts,tsx}'"
   }
 }
 ```

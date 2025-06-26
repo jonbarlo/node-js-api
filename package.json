@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "description": "NodeJS TypeScript API",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node dist/index.js",
     "dev": "nodemon",
     "build": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "lint": "eslint src/**/*.{ts,tsx}"
   },
   "repository": {
     "type": "git",
@@ -32,6 +34,9 @@
     "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.4",
+    "@typescript-eslint/eslint-plugin": "^8.35.0",
+    "@typescript-eslint/parser": "^8.35.0",
+    "eslint": "^9.29.0",
     "jest": "^30.0.3",
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
