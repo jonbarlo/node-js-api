@@ -26,7 +26,7 @@ describe('ItemController', () => {
     describe('getAll', () => {
         it('should call logger and send "List of items"', async () => {
             // Act
-            await ItemController.getAll(mockRequest as Request, mockResponse as Response);
+            await ItemController.getAll(mockRequest as Request, mockResponse as Response, jest.fn());
 
             // Assert
             expect(logger).toHaveBeenCalledWith('API endpoint /items was called...');
@@ -35,7 +35,7 @@ describe('ItemController', () => {
 
         it('should call logger exactly once', async () => {
             // Act
-            await ItemController.getAll(mockRequest as Request, mockResponse as Response);
+            await ItemController.getAll(mockRequest as Request, mockResponse as Response, jest.fn());
 
             // Assert
             expect(logger).toHaveBeenCalledTimes(1);
@@ -43,7 +43,7 @@ describe('ItemController', () => {
 
         it('should call res.send exactly once', async () => {
             // Act
-            await ItemController.getAll(mockRequest as Request, mockResponse as Response);
+            await ItemController.getAll(mockRequest as Request, mockResponse as Response, jest.fn());
 
             // Assert
             expect(mockSend).toHaveBeenCalledTimes(1);

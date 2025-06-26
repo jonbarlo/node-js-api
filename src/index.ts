@@ -5,6 +5,7 @@ import { logger } from './utils/logger';
 import { config } from './config';
 import userRouter from './routes/users';
 import itemRouter from './routes/items';
+import authRouter from './routes/auth';
 //import { UserController } from './controllers/userController';
 
 dotenv.config();
@@ -15,6 +16,7 @@ app.use(cors());
 app.use(express.json());
 //app.use('/api', routes);
 
+app.use('/auth', authRouter);
 app.use(userRouter);
 app.use(itemRouter);
 

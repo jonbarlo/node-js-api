@@ -26,7 +26,7 @@ describe('UserController', () => {
     describe('getAll', () => {
         it('should call logger and send "List of users"', async () => {
             // Act
-            await UserController.getAll(mockRequest as Request, mockResponse as Response);
+            await UserController.getAll(mockRequest as Request, mockResponse as Response, jest.fn());
 
             // Assert
             expect(logger).toHaveBeenCalledWith('API endpoint /users was called...');
@@ -35,7 +35,7 @@ describe('UserController', () => {
 
         it('should call logger exactly once', async () => {
             // Act
-            await UserController.getAll(mockRequest as Request, mockResponse as Response);
+            await UserController.getAll(mockRequest as Request, mockResponse as Response, jest.fn());
 
             // Assert
             expect(logger).toHaveBeenCalledTimes(1);
@@ -43,7 +43,7 @@ describe('UserController', () => {
 
         it('should call res.send exactly once', async () => {
             // Act
-            await UserController.getAll(mockRequest as Request, mockResponse as Response);
+            await UserController.getAll(mockRequest as Request, mockResponse as Response, jest.fn());
 
             // Assert
             expect(mockSend).toHaveBeenCalledTimes(1);
