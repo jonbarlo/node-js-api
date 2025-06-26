@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { logger } from './utils/logger';
@@ -7,15 +7,8 @@ import userRouter from './routes/users';
 import itemRouter from './routes/items';
 //import { UserController } from './controllers/userController';
 
-interface Item {
-    id: number;
-    name: string;
-}
-
-const items: Item[] = [];
 dotenv.config();
 const app = express();
-
 
 //import routes from './routes';
 app.use(cors());
