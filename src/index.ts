@@ -29,7 +29,7 @@ const startServer = async () => {
         logger('Database connection has been established successfully.');
 
         // Sync database (in development)
-        if (process.env.NODE_ENV === 'development') {
+        if (config.env === 'development') {
             await sequelize.sync({ alter: true });
             logger('Database synchronized.');
         }

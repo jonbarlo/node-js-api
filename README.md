@@ -477,6 +477,9 @@ npm run migrate - to run migrations through your TypeScript application
 npx sequelize-cli db:migrate:status - to check migration status
 The npm run migrate command is better for your TypeScript project because it runs through your TypeScript configuration and handles TypeScript files properly.
 
+# Initialize fresh database
+`npm run migrate:init`
+
 # Run all pending migrations
 `npm run migrate:all`
 

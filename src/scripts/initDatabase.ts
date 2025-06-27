@@ -3,15 +3,15 @@ import { logger } from '../utils/logger';
 import fs from 'fs';
 import path from 'path';
 
-async function runAllMigrations() {
+async function initDatabase() {
   try {
-    logger('Starting all pending migrations...');
+    logger('Initializing database...');
     
     // Test database connection
     await sequelize.authenticate();
     logger('Database connection established successfully.');
     
-    // Check if SequelizeMeta table exists, create it if it doesn't
+    // Check if SequelizeMeta table exists
     const [tables] = await sequelize.query("SHOW TABLES LIKE 'SequelizeMeta'");
     const hasMetaTable = Array.isArray(tables) && tables.length > 0;
     
@@ -27,6 +27,8 @@ async function runAllMigrations() {
       `);
       
       logger('✅ SequelizeMeta table created successfully.');
+    } else {
+      logger('✅ SequelizeMeta table already exists.');
     }
     
     // Get list of migration files
@@ -107,14 +109,14 @@ async function runAllMigrations() {
       }
     }
     
-    logger('🎉 All pending migrations completed successfully!');
+    logger('🎉 Database initialization completed successfully!');
     
   } catch (error) {
-    logger(`Migration failed: ${error}`);
+    logger(`Database initialization failed: ${error}`);
     process.exit(1);
   } finally {
     await sequelize.close();
   }
 }
 
-runAllMigrations(); 
+initDatabase(); 

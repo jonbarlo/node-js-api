@@ -11,6 +11,7 @@
     "lint": "eslint src/**/*.{ts,tsx}",
     "migrate": "ts-node src/scripts/runMigration.ts",
     "migrate:all": "ts-node src/scripts/runAllMigrations.ts",
+    "migrate:init": "ts-node src/scripts/initDatabase.ts",
     "migrate:status": "ts-node src/scripts/migrateStatus.ts",
     "migrate:undo": "ts-node src/scripts/migrateUndo.ts",
     "migrate:create": "ts-node src/scripts/createMigration.ts"
