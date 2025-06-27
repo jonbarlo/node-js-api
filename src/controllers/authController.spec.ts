@@ -117,6 +117,15 @@ describe('AuthController', () => {
                 name: 'Test User',
                 email: loginData.email,
                 password: 'hashedPassword',
+                get: jest.fn((field: string) => {
+                    const data: any = {
+                        id: 1,
+                        name: 'Test User',
+                        email: loginData.email,
+                        password: 'hashedPassword'
+                    };
+                    return data[field];
+                }),
                 toJSON: () => ({
                     id: 1,
                     name: 'Test User',
@@ -134,7 +143,7 @@ describe('AuthController', () => {
 
             // Assert
             expect(UserService.getUserByEmail).toHaveBeenCalledWith(loginData.email);
-            expect(bcrypt.compare).toHaveBeenCalledWith(loginData.password, mockUser.password);
+            expect(bcrypt.compare).toHaveBeenCalledWith(loginData.password, 'hashedPassword');
             expect(jwt.sign).toHaveBeenCalled();
             expect(mockJson).toHaveBeenCalledWith({
                 message: 'Login successful',
