@@ -26,8 +26,6 @@ logger(`- VERSION: ${process.env.VERSION}`);
 logger(`- PORT: ${process.env.PORT}`);
 logger(`- NODE_ENV: ${process.env.NODE_ENV}`);
 
-
-
 const app = express();
 
 //import routes from './routes';
@@ -52,11 +50,14 @@ const startServer = async () => {
             logger('Database synchronized.');
         }
 
-        // Start server
-        app.listen(config.port, () => {
-            //logger(`${config.appName} is running on port ${config.port} - Version: ${config.version} - Environment: ${config.env || 'development'}`);
-            logger(`${process.env.APP_NAME} is running on port ${process.env.PORT} - Version: ${process.env.VERSION} - Environment: ${process.env.NODE_ENV || 'development'}`);
-        });
+        // Start server only in development
+        if (config.env === 'development') {
+            app.listen(config.port, () => {
+                logger(`${process.env.APP_NAME} is running on port ${process.env.PORT} - Version: ${process.env.VERSION} - Environment: ${process.env.NODE_ENV || 'development'}`);
+            });
+        } else {
+            logger(`${process.env.APP_NAME} is ready for IIS - Version: ${process.env.VERSION} - Environment: ${process.env.NODE_ENV}`);
+        }
     } catch (error) {
         logger(`Unable to connect to the database: ${error}`);
         process.exit(1);
@@ -64,6 +65,9 @@ const startServer = async () => {
 };
 
 startServer();
+
+// Export the app for IIS
+export default app;
 
 // app.get('/items', (req: Request, res: Response) => {
 //     res.json(items);
