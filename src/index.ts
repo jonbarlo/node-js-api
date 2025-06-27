@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import { logger } from './utils/logger';
 import { config } from './config';
 import { sequelize } from './config/database';
@@ -9,7 +10,17 @@ import itemRouter from './routes/items';
 import authRouter from './routes/auth';
 //import { UserController } from './controllers/userController';
 
-dotenv.config();
+// Load environment variables from .env file
+const envPath = path.resolve(process.cwd(), '.env');
+const result = dotenv.config({ path: envPath });
+
+if (result.error) {
+    logger(`Warning: .env file not found at ${envPath}`);
+    logger('Using default environment variables');
+} else {
+    logger(`Environment variables loaded from ${envPath}`);
+}
+
 const app = express();
 
 //import routes from './routes';
