@@ -8,7 +8,12 @@
     "dev": "nodemon",
     "build": "tsc",
     "test": "jest",
-    "lint": "eslint src/**/*.{ts,tsx}"
+    "lint": "eslint src/**/*.{ts,tsx}",
+    "migrate": "ts-node src/scripts/runMigration.ts",
+    "migrate:all": "ts-node src/scripts/runAllMigrations.ts",
+    "migrate:status": "ts-node src/scripts/migrateStatus.ts",
+    "migrate:undo": "ts-node src/scripts/migrateUndo.ts",
+    "migrate:create": "ts-node src/scripts/createMigration.ts"
   },
   "repository": {
     "type": "git",
@@ -34,7 +39,7 @@
     "pg": "^8.16.2",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.7",
-    "sequelize-cli": "^6.6.3"
+    "sequelize-typescript": "^2.1.6"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -48,6 +53,7 @@
     "@typescript-eslint/parser": "^8.35.0",
     "eslint": "^9.29.0",
     "jest": "^30.0.3",
+    "sequelize-cli": "^6.6.3",
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
