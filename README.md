@@ -711,10 +711,780 @@ JWT tokens with 24-hour expiration
 Input validation for all endpoints
 Secure responses (passwords never returned)
 Error handling with appropriate HTTP status codes
-�� Ready to Use:
+ Ready to Use:
 Your API now has complete JWT authentication! You can:
 Register new users at POST /auth/register
 Login users at POST /auth/login
 Protect any route using the authenticateToken middleware
 Use the returned JWT tokens in the Authorization: Bearer <token> header
 The system is production-ready with proper security practices and comprehensive testing!
+
+
+# Step 41: Install and configure ORM
+
+# Adding JWT Authentication, Sequelize Database Integration, and User Management
+
+## Step 42: Install Additional Dependencies
+```bash
+# JWT Authentication
+npm install jsonwebtoken bcryptjs
+npm install --save-dev @types/jsonwebtoken @types/bcryptjs
+
+# Database and ORM
+npm install sequelize mysql2 sequelize-cli
+npm install --save-dev @types/sequelize
+
+# Testing
+npm install --save-dev jest ts-jest @types/jest
+```
+
+## Step 43: Update TypeScript Configuration
+Update `tsconfig.json` with stricter settings for better type safety:
+```json
+{
+    "compilerOptions": {
+        "target": "es2020",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "rootDir": "./src",
+        "outDir": "./dist",
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "strict": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "resolveJsonModule": true,
+        "declaration": true,
+        "declarationMap": true,
+        "sourceMap": true,
+        "removeComments": false,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "noUncheckedIndexedAccess": true,
+        "exactOptionalPropertyTypes": true
+    },
+    "include": ["src/**/*"],
+    "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+}
+```
+
+## Step 44: Configure Database Connection
+Create `src/config/database.ts`:
+```typescript
+import { Sequelize } from 'sequelize';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const env = process.env.NODE_ENV || 'development';
+
+const config = {
+  development: {
+    username: process.env.DB_USERNAME || 'root',
+    password: process.env.DB_PASSWORD || 'password',
+    database: process.env.DB_NAME || 'nodejs_api_dev',
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    dialect: 'mysql' as const,
+    dialectOptions: {
+      charset: 'utf8mb4',
+    },
+    logging: console.log,
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    }
+  },
+  test: {
+    username: process.env.DB_USERNAME || 'root',
+    password: process.env.DB_PASSWORD || 'password',
+    database: process.env.DB_NAME_TEST || 'nodejs_api_test',
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    dialect: 'mysql' as const,
+    dialectOptions: {
+      charset: 'utf8mb4',
+    },
+    logging: false,
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    }
+  },
+  production: {
+    username: process.env.DB_USERNAME || '',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || '',
+    host: process.env.DB_HOST || '',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    dialect: 'mysql' as const,
+    dialectOptions: {
+      charset: 'utf8mb4',
+    },
+    logging: false,
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    }
+  }
+};
+
+const dbConfig = config[env as keyof typeof config];
+
+export const sequelize = new Sequelize(
+  dbConfig.database,
+  dbConfig.username,
+  dbConfig.password,
+  {
+    host: dbConfig.host,
+    port: dbConfig.port,
+    dialect: dbConfig.dialect,
+    dialectOptions: dbConfig.dialectOptions,
+    logging: dbConfig.logging,
+    pool: dbConfig.pool,
+  }
+);
+
+export default sequelize;
+```
+
+## Step 45: Create User Model
+Create `src/models/UserModel.ts`:
+```typescript
+import { DataTypes, Model, Optional } from 'sequelize';
+import { sequelize } from '../config/database';
+
+// These are all the attributes in the User model
+export interface UserAttributes {
+  id: number;
+  name: string;
+  email: string;
+  password: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// Some attributes are optional in `User.build()` and `User.create()`
+export type UserCreationAttributes = Optional<UserAttributes, 'id' | 'createdAt' | 'updatedAt'>;
+
+export class UserModel extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
+  public id!: number;
+  public name!: string;
+  public email!: string;
+  public password!: string;
+  public readonly createdAt!: Date;
+  public readonly updatedAt!: Date;
+}
+
+UserModel.init(
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+    },
+    name: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+    },
+    email: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+      unique: true,
+    },
+    password: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+    },
+  },
+  {
+    sequelize,
+    tableName: 'users',
+    timestamps: true,
+  }
+);
+
+export default UserModel;
+```
+
+## Step 46: Create Database Migration
+Create `src/migrations/20250626235343-create-users-table.ts`:
+```typescript
+import { QueryInterface, DataTypes } from 'sequelize';
+
+export async function up(queryInterface: QueryInterface): Promise<void> {
+  await queryInterface.createTable('users', {
+    id: {
+      allowNull: false,
+      autoIncrement: true,
+      primaryKey: true,
+      type: DataTypes.INTEGER
+    },
+    name: {
+      type: DataTypes.STRING(100),
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+        len: [2, 100]
+      }
+    },
+    email: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+      unique: true,
+      validate: {
+        isEmail: true,
+        notEmpty: true
+      }
+    },
+    password: {
+      type: DataTypes.STRING(255),
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+        len: [6, 255]
+      }
+    },
+    createdAt: {
+      allowNull: false,
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
+    },
+    updatedAt: {
+      allowNull: false,
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
+    }
+  });
+
+  // Add index on email
+  await queryInterface.addIndex('users', ['email'], {
+    unique: true,
+    name: 'users_email_unique'
+  });
+}
+
+export async function down(queryInterface: QueryInterface): Promise<void> {
+  await queryInterface.dropTable('users');
+}
+```
+
+## Step 47: Create User Service
+Create `src/services/userService.ts`:
+```typescript
+import UserModel, { UserAttributes, UserCreationAttributes } from '../models/UserModel';
+import bcrypt from 'bcryptjs';
+
+export type UserWithoutPassword = Omit<UserAttributes, 'password'>;
+
+export class UserService {
+  /**
+   * Create a new user
+   */
+  static async createUser(userData: UserCreationAttributes): Promise<UserWithoutPassword> {
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    const user = await UserModel.create({
+      ...userData,
+      password: hashedPassword,
+    });
+    
+    const userJson = user.toJSON();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userWithoutPassword } = userJson;
+    return userWithoutPassword as UserWithoutPassword;
+  }
+
+  /**
+   * Get all users without passwords
+   */
+  static async getAllUsers(): Promise<UserWithoutPassword[]> {
+    const users = await UserModel.findAll({
+      attributes: { exclude: ['password'] },
+      order: [['createdAt', 'DESC']],
+    });
+    return users.map((user: UserModel) => {
+      const userData = user.toJSON();
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...userWithoutPassword } = userData;
+      return userWithoutPassword as UserWithoutPassword;
+    });
+  }
+
+  /**
+   * Get user by ID without password
+   */
+  static async getUserById(id: number): Promise<UserWithoutPassword | null> {
+    const user = await UserModel.findByPk(id, {
+      attributes: { exclude: ['password'] },
+    });
+    
+    if (!user) return null;
+    
+    const userJson = user.toJSON();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userWithoutPassword } = userJson;
+    return userWithoutPassword as UserWithoutPassword;
+  }
+
+  /**
+   * Get user by email (with password for authentication)
+   */
+  static async getUserByEmail(email: string): Promise<UserModel | null> {
+    return await UserModel.findOne({ where: { email } });
+  }
+
+  /**
+   * Check if user exists by email
+   */
+  static async userExists(email: string): Promise<boolean> {
+    const user = await UserModel.findOne({ where: { email } });
+    return !!user;
+  }
+
+  /**
+   * Update user
+   */
+  static async updateUser(id: number, updateData: Partial<UserAttributes>): Promise<UserWithoutPassword | null> {
+    const user = await UserModel.findByPk(id);
+    if (!user) return null;
+
+    // Hash password if it's being updated
+    if (updateData.password) {
+      updateData.password = await bcrypt.hash(updateData.password, 10);
+    }
+
+    await user.update(updateData);
+    
+    const userJson = user.toJSON();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userWithoutPassword } = userJson;
+    return userWithoutPassword as UserWithoutPassword;
+  }
+
+  /**
+   * Delete user
+   */
+  static async deleteUser(id: number): Promise<boolean> {
+    const user = await UserModel.findByPk(id);
+    if (!user) return false;
+    
+    await user.destroy();
+    return true;
+  }
+
+  /**
+   * Verify password
+   */
+  static async verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+    return await bcrypt.compare(password, hashedPassword);
+  }
+}
+```
+
+## Step 48: Create Authentication Middleware
+Create `src/middleware/auth.ts`:
+```typescript
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { logger } from '../utils/logger';
+
+export interface AuthRequest extends Request {
+  user?: {
+    id: number;
+    email: string;
+    name: string;
+  };
+}
+
+export const auth = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+
+    if (!token) {
+      return res.status(401).json({ error: 'Access denied. No token provided.' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
+    req.user = decoded;
+    next();
+  } catch (error) {
+    logger(`Authentication error: ${error}`);
+    res.status(401).json({ error: 'Invalid token.' });
+  }
+};
+```
+
+## Step 49: Create Authentication Controller
+Create `src/controllers/authController.ts`:
+```typescript
+import { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
+import { UserService } from '../services/userService';
+import { logger } from '../utils/logger';
+
+export class AuthController {
+  /**
+   * Register a new user
+   */
+  static async register(req: Request, res: Response) {
+    try {
+      const { name, email, password } = req.body;
+
+      // Validate input
+      if (!name || !email || !password) {
+        return res.status(400).json({ 
+          error: 'Name, email, and password are required' 
+        });
+      }
+
+      // Check if user already exists
+      const existingUser = await UserService.userExists(email);
+      if (existingUser) {
+        return res.status(409).json({ 
+          error: 'User with this email already exists' 
+        });
+      }
+
+      // Create user
+      const newUser = await UserService.createUser({ name, email, password });
+
+      // Generate JWT token
+      const token = jwt.sign(
+        { id: newUser.id, email: newUser.email, name: newUser.name },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '24h' }
+      );
+
+      logger('User registered successfully');
+      res.status(201).json({
+        message: 'User registered successfully',
+        user: newUser,
+        token
+      });
+    } catch (error) {
+      logger(`Registration error: ${error}`);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Login user
+   */
+  static async login(req: Request, res: Response) {
+    try {
+      const { email, password } = req.body;
+
+      // Validate input
+      if (!email || !password) {
+        return res.status(400).json({ 
+          error: 'Email and password are required' 
+        });
+      }
+
+      // Find user by email
+      const user = await UserService.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ 
+          error: 'Invalid email or password' 
+        });
+      }
+
+      // Verify password
+      const isValidPassword = await UserService.verifyPassword(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ 
+          error: 'Invalid email or password' 
+        });
+      }
+
+      // Generate JWT token
+      const token = jwt.sign(
+        { id: user.id, email: user.email, name: user.name },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '24h' }
+      );
+
+      logger('User logged in successfully');
+      res.json({
+        message: 'Login successful',
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email
+        },
+        token
+      });
+    } catch (error) {
+      logger(`Login error: ${error}`);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+}
+```
+
+## Step 50: Update User Controller
+Update `src/controllers/userController.ts`:
+```typescript
+import { Request, Response, RequestHandler } from 'express';
+import { logger } from '../utils/logger';
+import { UserService } from '../services/userService';
+
+export class UserController {
+
+    // Get all users
+    public static getAll: RequestHandler = async (req: Request, res: Response) => {
+        try {
+            logger('API endpoint /users was called...');
+            const users = await UserService.getAllUsers();
+            res.json(users);
+        } catch (error) {
+            logger(`Error getting users: ${error}`);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    };
+
+    // Get user by ID
+    public static getUserById: RequestHandler = async (req: Request, res: Response) => {
+        try {
+            const { id } = req.params;
+            
+            if (!id) {
+                res.status(400).json({ error: 'User ID is required' });
+                return;
+            }
+            
+            const userId = parseInt(id);
+            
+            if (isNaN(userId)) {
+                res.status(400).json({ error: 'Invalid user ID' });
+                return;
+            }
+
+            logger(`API endpoint /users/${id} was called...`);
+            const user = await UserService.getUserById(userId);
+            
+            if (!user) {
+                res.status(404).json({ error: 'User not found' });
+                return;
+            }
+
+            res.json(user);
+        } catch (error) {
+            logger(`Error getting user by ID: ${error}`);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    };
+
+    // Create new user
+    public static createUser: RequestHandler = async (req: Request, res: Response) => {
+        try {
+            const { name, email, password } = req.body;
+
+            // Validate input
+            if (!name || !email || !password) {
+                res.status(400).json({ 
+                    error: 'Name, email, and password are required' 
+                });
+                return;
+            }
+
+            // Check if user already exists
+            const existingUser = await UserService.userExists(email);
+            if (existingUser) {
+                res.status(409).json({ 
+                    error: 'User with this email already exists' 
+                });
+                return;
+            }
+
+            logger('API endpoint POST /users was called...');
+            const newUser = await UserService.createUser({ name, email, password });
+            res.status(201).json(newUser);
+        } catch (error) {
+            logger(`Error creating user: ${error}`);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    };
+
+    // Update user
+    public static updateUser: RequestHandler = async (req: Request, res: Response) => {
+        try {
+            const { id } = req.params;
+            
+            if (!id) {
+                res.status(400).json({ error: 'User ID is required' });
+                return;
+            }
+            
+            const userId = parseInt(id);
+            
+            if (isNaN(userId)) {
+                res.status(400).json({ error: 'Invalid user ID' });
+                return;
+            }
+
+            const { name, email, password } = req.body;
+            const updateData: any = {};
+            
+            if (name) updateData.name = name;
+            if (email) updateData.email = email;
+            if (password) updateData.password = password;
+
+            if (Object.keys(updateData).length === 0) {
+                res.status(400).json({ error: 'No fields to update' });
+                return;
+            }
+
+            logger(`API endpoint PUT /users/${id} was called...`);
+            const updatedUser = await UserService.updateUser(userId, updateData);
+            
+            if (!updatedUser) {
+                res.status(404).json({ error: 'User not found' });
+                return;
+            }
+
+            res.json(updatedUser);
+        } catch (error) {
+            logger(`Error updating user: ${error}`);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    };
+
+    // Delete user
+    public static deleteUser: RequestHandler = async (req: Request, res: Response) => {
+        try {
+            const { id } = req.params;
+            
+            if (!id) {
+                res.status(400).json({ error: 'User ID is required' });
+                return;
+            }
+            
+            const userId = parseInt(id);
+            
+            if (isNaN(userId)) {
+                res.status(400).json({ error: 'Invalid user ID' });
+                return;
+            }
+
+            logger(`API endpoint DELETE /users/${id} was called...`);
+            const deleted = await UserService.deleteUser(userId);
+            
+            if (!deleted) {
+                res.status(404).json({ error: 'User not found' });
+                return;
+            }
+
+            res.json({ message: 'User deleted successfully' });
+        } catch (error) {
+            logger(`Error deleting user: ${error}`);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    };
+}
+```
+
+## Step 51: Create Routes
+Create `src/routes/auth.ts`:
+```typescript
+import { Router } from 'express';
+import { AuthController } from '../controllers/authController';
+
+const authRouter = Router();
+
+authRouter.post('/register', AuthController.register);
+authRouter.post('/login', AuthController.login);
+
+export default authRouter;
+```
+
+Create `src/routes/users.ts`:
+```typescript
+import { Router } from 'express';
+import { UserController } from '../controllers/userController';
+import { auth } from '../middleware/auth';
+
+const userRouter = Router();
+
+// Protected routes - require authentication
+userRouter.get('/', auth, UserController.getAll);
+userRouter.get('/:id', auth, UserController.getUserById);
+userRouter.post('/', auth, UserController.createUser);
+userRouter.put('/:id', auth, UserController.updateUser);
+userRouter.delete('/:id', auth, UserController.deleteUser);
+
+export default userRouter;
+```
+
+## Step 52: Update Environment Variables
+Add to your `.env` file:
+```env
+# Database Configuration
+DB_USERNAME=root
+DB_PASSWORD=your_password
+DB_NAME=nodejs_api_dev
+DB_HOST=localhost
+DB_PORT=3306
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+
+# Environment
+NODE_ENV=development
+```
+
+## Step 53: Run Database Migration
+```bash
+# Initialize Sequelize (if not already done)
+npx sequelize-cli init
+
+# Run the migration
+npx sequelize-cli db:migrate
+```
+
+## Step 54: Test the Application
+```bash
+# Build the project
+npm run build
+
+# Start the application
+npm start
+```
+
+## Key Features Added:
+- **JWT Authentication**: Secure login/register with token-based authentication
+- **Password Hashing**: Secure password storage using bcrypt
+- **Database Integration**: MySQL/MariaDB with Sequelize ORM
+- **User Management**: Full CRUD operations for users
+- **Protected Routes**: Authentication middleware for secure endpoints
+- **TypeScript Strict Mode**: Enhanced type safety and error checking
+- **Proper Error Handling**: Comprehensive error responses
+- **Input Validation**: Request validation and sanitization
+
+## API Endpoints:
+- `POST /api/auth/register` - Register a new user
+- `POST /api/auth/login` - Login user
+- `GET /api/users` - Get all users (protected)
+- `GET /api/users/:id` - Get user by ID (protected)
+- `POST /api/users` - Create new user (protected)
+- `PUT /api/users/:id` - Update user (protected)
+- `DELETE /api/users/:id` - Delete user (protected)
+
+## Troubleshooting TypeScript Issues:
+If you encounter "File is not a module" errors:
+1. Ensure all files have proper exports
+2. Use correct import/export syntax
+3. Check for file naming conflicts
+4. Verify TypeScript configuration settings
+5. Remove any JavaScript files that might conflict with TypeScript files
+6. Use proper TypeScript strict mode configuration
+7. Ensure all dependencies have proper type definitions installed

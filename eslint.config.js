@@ -26,6 +26,23 @@ module.exports = [
         },
     },
     {
+        files: ['src/**/*.js'],
+        languageOptions: {
+            globals: {
+                process: 'readonly',
+                console: 'readonly',
+                module: 'readonly',
+                require: 'readonly',
+            },
+        },
+    },
+    {
+        files: ['src/migrations/**/*.js'],
+        rules: {
+            '@typescript-eslint/no-unused-vars': 'off',
+        },
+    },
+    {
         files: ['src/**/*.spec.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],
         languageOptions: {
             globals: {

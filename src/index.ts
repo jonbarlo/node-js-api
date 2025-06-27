@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { logger } from './utils/logger';
 import { config } from './config';
+import { sequelize } from './config/database';
 import userRouter from './routes/users';
 import itemRouter from './routes/items';
 import authRouter from './routes/auth';
@@ -20,11 +21,30 @@ app.use('/auth', authRouter);
 app.use(userRouter);
 app.use(itemRouter);
 
-app.listen(config.port, () => {
-    //  console.log(`Server is running on port ${PORT}`);
-    logger(`${config.appName} is running on port ${config.port} - Version: ${config.version} - Environment: ${config.env || 'development'}`);
-});
+// Database connection and server startup
+const startServer = async () => {
+    try {
+        // Test database connection
+        await sequelize.authenticate();
+        logger('Database connection has been established successfully.');
 
+        // Sync database (in development)
+        if (process.env.NODE_ENV === 'development') {
+            await sequelize.sync({ alter: true });
+            logger('Database synchronized.');
+        }
+
+        // Start server
+        app.listen(config.port, () => {
+            logger(`${config.appName} is running on port ${config.port} - Version: ${config.version} - Environment: ${config.env || 'development'}`);
+        });
+    } catch (error) {
+        logger(`Unable to connect to the database: ${error}`);
+        process.exit(1);
+    }
+};
+
+startServer();
 
 // app.get('/items', (req: Request, res: Response) => {
 //     res.json(items);

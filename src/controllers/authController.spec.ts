@@ -2,12 +2,12 @@ import { AuthController } from './authController';
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { getUserByEmail, createUser } from '../models/user';
+import { UserService } from '../services/userService';
 
 // Mock dependencies
 jest.mock('bcryptjs');
 jest.mock('jsonwebtoken');
-jest.mock('../models/user');
+jest.mock('../services/userService');
 jest.mock('../utils/logger', () => ({
     logger: jest.fn(),
 }));
@@ -44,13 +44,14 @@ describe('AuthController', () => {
             };
             mockRequest.body = userData;
             
-            (getUserByEmail as jest.Mock).mockReturnValue(undefined);
+            (UserService.userExists as jest.Mock).mockResolvedValue(false);
             (bcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword');
-            (createUser as jest.Mock).mockReturnValue({
+            (UserService.createUser as jest.Mock).mockResolvedValue({
                 id: 3,
                 name: userData.name,
                 email: userData.email,
-                password: 'hashedPassword'
+                createdAt: new Date(),
+                updatedAt: new Date()
             });
             (jwt.sign as jest.Mock).mockReturnValue('mockToken');
 
@@ -58,9 +59,13 @@ describe('AuthController', () => {
             await AuthController.register(mockRequest as Request, mockResponse as Response, jest.fn());
 
             // Assert
-            expect(getUserByEmail).toHaveBeenCalledWith(userData.email);
+            expect(UserService.userExists).toHaveBeenCalledWith(userData.email);
             expect(bcrypt.hash).toHaveBeenCalledWith(userData.password, 10);
-            expect(createUser).toHaveBeenCalledWith(userData.name, userData.email, 'hashedPassword');
+            expect(UserService.createUser).toHaveBeenCalledWith({
+                name: userData.name,
+                email: userData.email,
+                password: 'hashedPassword'
+            });
             expect(jwt.sign).toHaveBeenCalled();
             expect(mockStatus).toHaveBeenCalledWith(201);
             expect(mockJson).toHaveBeenCalledWith({
@@ -68,7 +73,9 @@ describe('AuthController', () => {
                 user: {
                     id: 3,
                     name: userData.name,
-                    email: userData.email
+                    email: userData.email,
+                    createdAt: expect.any(Date),
+                    updatedAt: expect.any(Date)
                 },
                 token: 'mockToken'
             });
@@ -83,12 +90,7 @@ describe('AuthController', () => {
             };
             mockRequest.body = userData;
             
-            (getUserByEmail as jest.Mock).mockReturnValue({
-                id: 1,
-                name: 'Existing User',
-                email: userData.email,
-                password: 'hashedPassword'
-            });
+            (UserService.userExists as jest.Mock).mockResolvedValue(true);
 
             // Act
             await AuthController.register(mockRequest as Request, mockResponse as Response, jest.fn());
@@ -114,10 +116,16 @@ describe('AuthController', () => {
                 id: 1,
                 name: 'Test User',
                 email: loginData.email,
-                password: 'hashedPassword'
+                password: 'hashedPassword',
+                toJSON: () => ({
+                    id: 1,
+                    name: 'Test User',
+                    email: loginData.email,
+                    password: 'hashedPassword'
+                })
             };
             
-            (getUserByEmail as jest.Mock).mockReturnValue(mockUser);
+            (UserService.getUserByEmail as jest.Mock).mockResolvedValue(mockUser);
             (bcrypt.compare as jest.Mock).mockResolvedValue(true);
             (jwt.sign as jest.Mock).mockReturnValue('mockToken');
 
@@ -125,7 +133,7 @@ describe('AuthController', () => {
             await AuthController.login(mockRequest as Request, mockResponse as Response, jest.fn());
 
             // Assert
-            expect(getUserByEmail).toHaveBeenCalledWith(loginData.email);
+            expect(UserService.getUserByEmail).toHaveBeenCalledWith(loginData.email);
             expect(bcrypt.compare).toHaveBeenCalledWith(loginData.password, mockUser.password);
             expect(jwt.sign).toHaveBeenCalled();
             expect(mockJson).toHaveBeenCalledWith({
@@ -147,7 +155,7 @@ describe('AuthController', () => {
             };
             mockRequest.body = loginData;
             
-            (getUserByEmail as jest.Mock).mockReturnValue(undefined);
+            (UserService.getUserByEmail as jest.Mock).mockResolvedValue(null);
 
             // Act
             await AuthController.login(mockRequest as Request, mockResponse as Response, jest.fn());

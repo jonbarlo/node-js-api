@@ -2,7 +2,7 @@ import { Request, Response, RequestHandler } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger';
-import { getUserByEmail, createUser } from '../models/user';
+import { UserService } from '../services/userService';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -22,7 +22,7 @@ export class AuthController {
             }
 
             // Check if user already exists
-            const existingUser = getUserByEmail(email);
+            const existingUser = await UserService.userExists(email);
             if (existingUser) {
                 res.status(409).json({ 
                     error: 'User with this email already exists' 
@@ -35,7 +35,11 @@ export class AuthController {
             const hashedPassword = await bcrypt.hash(password, saltRounds);
 
             // Create user
-            const newUser = createUser(name, email, hashedPassword);
+            const newUser = await UserService.createUser({
+                name,
+                email,
+                password: hashedPassword
+            });
 
             // Generate JWT token
             const token = jwt.sign(
@@ -44,13 +48,9 @@ export class AuthController {
                 { expiresIn: '24h' }
             );
 
-            // Return user data without password
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { password: _, ...userWithoutPassword } = newUser;
-
             res.status(201).json({
                 message: 'User registered successfully',
-                user: userWithoutPassword,
+                user: newUser,
                 token
             });
 
@@ -75,7 +75,7 @@ export class AuthController {
             }
 
             // Find user by email
-            const user = getUserByEmail(email);
+            const user = await UserService.getUserByEmail(email);
             if (!user) {
                 res.status(401).json({ 
                     error: 'Invalid email or password' 
@@ -84,7 +84,7 @@ export class AuthController {
             }
 
             // Verify password
-            const isValidPassword = await bcrypt.compare(password, user.password);
+            const isValidPassword = await bcrypt.compare(password, user.get('password') as string);
             if (!isValidPassword) {
                 res.status(401).json({ 
                     error: 'Invalid email or password' 
@@ -94,14 +94,15 @@ export class AuthController {
 
             // Generate JWT token
             const token = jwt.sign(
-                { userId: user.id, email: user.email },
+                { userId: user.get('id') as number, email: user.get('email') as string },
                 JWT_SECRET,
                 { expiresIn: '24h' }
             );
 
             // Return user data without password
+            const userData = user.toJSON();
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { password: _, ...userWithoutPassword } = user;
+            const { password: _, ...userWithoutPassword } = userData;
 
             res.json({
                 message: 'Login successful',
