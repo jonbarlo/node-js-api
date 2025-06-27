@@ -47,10 +47,16 @@ const config = {
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || '',
     host: process.env.DB_HOST || '',
-    port: parseInt(process.env.DB_PORT || '3306'),
-    dialect: 'mysql' as const,
+    port: parseInt(process.env.DB_PORT || '1433'),
+    dialect: 'mssql' as const,
     dialectOptions: {
-      charset: 'utf8mb4',
+      options: {
+        encrypt: false, // Set to false for self-signed certificates
+        trustServerCertificate: true, // Trust self-signed certificates
+        enableArithAbort: true,
+        requestTimeout: 30000,
+        connectionTimeout: 30000,
+      },
     },
     logging: false,
     pool: {

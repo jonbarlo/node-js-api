@@ -11,20 +11,42 @@ async function initDatabase() {
     await sequelize.authenticate();
     logger('Database connection established successfully.');
     
-    // Check if SequelizeMeta table exists
-    const [tables] = await sequelize.query("SHOW TABLES LIKE 'SequelizeMeta'");
-    const hasMetaTable = Array.isArray(tables) && tables.length > 0;
+    // Check if SequelizeMeta table exists using database-agnostic approach
+    const dialect = sequelize.getDialect();
+    let hasMetaTable = false;
+    
+    if (dialect === 'mysql' || dialect === 'mariadb') {
+      const [tables] = await sequelize.query("SHOW TABLES LIKE 'SequelizeMeta'");
+      hasMetaTable = Array.isArray(tables) && tables.length > 0;
+    } else if (dialect === 'mssql') {
+      const [tables] = await sequelize.query(`
+        SELECT TABLE_NAME 
+        FROM INFORMATION_SCHEMA.TABLES 
+        WHERE TABLE_NAME = 'SequelizeMeta' AND TABLE_TYPE = 'BASE TABLE'
+      `);
+      hasMetaTable = Array.isArray(tables) && tables.length > 0;
+    }
     
     if (!hasMetaTable) {
       logger('Creating SequelizeMeta table...');
       
-      // Create SequelizeMeta table
-      await sequelize.query(`
-        CREATE TABLE IF NOT EXISTS \`SequelizeMeta\` (
-          \`name\` VARCHAR(255) NOT NULL,
-          PRIMARY KEY (\`name\`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-      `);
+      // Create SequelizeMeta table with database-agnostic syntax
+      if (dialect === 'mysql' || dialect === 'mariadb') {
+        await sequelize.query(`
+          CREATE TABLE IF NOT EXISTS \`SequelizeMeta\` (
+            \`name\` VARCHAR(255) NOT NULL,
+            PRIMARY KEY (\`name\`)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        `);
+      } else if (dialect === 'mssql') {
+        await sequelize.query(`
+          IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='SequelizeMeta' AND xtype='U')
+          CREATE TABLE [SequelizeMeta] (
+            [name] NVARCHAR(255) NOT NULL,
+            PRIMARY KEY ([name])
+          );
+        `);
+      }
       
       logger('✅ SequelizeMeta table created successfully.');
     } else {
