@@ -13,9 +13,20 @@ import authRouter from './routes/auth';
 const envPath = path.resolve(process.cwd(), '.env');
 logger(`Environment variables loaded from ${envPath}`);
 logger(`Environment Loaded: ${config.env}`);
-logger(`DB Loaded: ${process.env.DB_USERNAME}`);
-logger(`DB Loaded: ${process.env.DB_NAME}`);
-logger(`DB Loaded: ${process.env.DB_HOST}`);
+
+logger(`- DB_USERNAME: ${process.env.DB_USERNAME}`);
+logger(`- DB_NAME: ${process.env.DB_NAME}`);
+logger(`- DB_HOST: ${process.env.DB_HOST}`);
+logger(`- DB_PORT: ${process.env.DB_PORT}`);
+logger(`- DB_PASSWORD: ${process.env.DB_PASSWORD}`);
+logger(`- DB_URL: ${process.env.DB_URL}`);
+
+logger(`- APP_NAME: ${process.env.APP_NAME}`);
+logger(`- VERSION: ${process.env.VERSION}`);
+logger(`- PORT: ${process.env.PORT}`);
+logger(`- NODE_ENV: ${process.env.NODE_ENV}`);
+
+
 
 const app = express();
 
@@ -43,7 +54,8 @@ const startServer = async () => {
 
         // Start server
         app.listen(config.port, () => {
-            logger(`${config.appName} is running on port ${config.port} - Version: ${config.version} - Environment: ${config.env || 'development'}`);
+            //logger(`${config.appName} is running on port ${config.port} - Version: ${config.version} - Environment: ${config.env || 'development'}`);
+            logger(`${process.env.APP_NAME} is running on port ${process.env.PORT} - Version: ${process.env.VERSION} - Environment: ${process.env.NODE_ENV || 'development'}`);
         });
     } catch (error) {
         logger(`Unable to connect to the database: ${error}`);
