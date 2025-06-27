@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import path from 'path';
 import { logger } from './utils/logger';
 import { config } from './config';
@@ -12,14 +11,11 @@ import authRouter from './routes/auth';
 
 // Load environment variables from .env file
 const envPath = path.resolve(process.cwd(), '.env');
-const result = dotenv.config({ path: envPath });
-
-if (result.error) {
-    logger(`Warning: .env file not found at ${envPath}`);
-    logger('Using default environment variables');
-} else {
-    logger(`Environment variables loaded from ${envPath}`);
-}
+logger(`Environment variables loaded from ${envPath}`);
+logger(`Environment Loaded: ${config.env}`);
+logger(`DB Loaded: ${process.env.DB_USERNAME}`);
+logger(`DB Loaded: ${process.env.DB_NAME}`);
+logger(`DB Loaded: ${process.env.DB_HOST}`);
 
 const app = express();
 
