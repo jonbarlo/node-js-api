@@ -18,6 +18,15 @@ import authRouter from './routes/auth';
 logger(`Environment variables loaded from ${envPath}`);
 logger(`Environment Loaded: ${config.env}`);
 
+// Debug: Log all environment variables
+logger('=== ALL ENVIRONMENT VARIABLES ===');
+Object.keys(process.env).forEach(key => {
+  if (key.includes('DB_') || key.includes('NODE_') || key.includes('APP_') || key.includes('JWT_')) {
+    logger(`${key}: ${process.env[key]}`);
+  }
+});
+logger('=== END ENVIRONMENT VARIABLES ===');
+
 logger(`- DB_USERNAME: ${process.env.DB_USERNAME}`);
 logger(`- DB_NAME: ${process.env.DB_NAME}`);
 logger(`- DB_HOST: ${process.env.DB_HOST}`);
