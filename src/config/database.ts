@@ -43,10 +43,10 @@ const config = {
     }
   },
   production: {
-    username: process.env.DB_USERNAME || '',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || '',
-    host: process.env.DB_HOST || '',
+    username: process.env.DB_USERNAME,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    host: process.env.DB_HOST,
     port: parseInt(process.env.DB_PORT || '1433'),
     dialect: 'mssql' as const,
     dialectOptions: {
@@ -70,12 +70,25 @@ const config = {
 
 const dbConfig = config[env as keyof typeof config];
 
+// Validate required configuration for production
+if (env === 'production') {
+  if (!dbConfig.host || !dbConfig.database || !dbConfig.username || !dbConfig.password) {
+    throw new Error(
+      `Invalid database configuration for production. Please check your environment variables:\n` +
+      `DB_HOST: ${dbConfig.host}\n` +
+      `DB_NAME: ${dbConfig.database}\n` +
+      `DB_USERNAME: ${dbConfig.username}\n` +
+      `DB_PASSWORD: ${dbConfig.password ? '[SET]' : '[MISSING]'}`
+    );
+  }
+}
+
 export const sequelize = new Sequelize(
-  dbConfig.database,
-  dbConfig.username,
-  dbConfig.password,
+  dbConfig.database!,
+  dbConfig.username!,
+  dbConfig.password!,
   {
-    host: dbConfig.host,
+    host: dbConfig.host!,
     port: dbConfig.port,
     dialect: dbConfig.dialect,
     dialectOptions: dbConfig.dialectOptions,

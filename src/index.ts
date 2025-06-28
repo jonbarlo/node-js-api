@@ -1,6 +1,12 @@
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load environment variables from .env file FIRST
+const envPath = path.resolve(process.cwd(), '.env');
+dotenv.config({ path: envPath });
+
 import express from 'express';
 import cors from 'cors';
-import path from 'path';
 import { logger } from './utils/logger';
 import { config } from './config';
 import { sequelize } from './config/database';
@@ -9,8 +15,6 @@ import itemRouter from './routes/items';
 import authRouter from './routes/auth';
 //import { UserController } from './controllers/userController';
 
-// Load environment variables from .env file
-const envPath = path.resolve(process.cwd(), '.env');
 logger(`Environment variables loaded from ${envPath}`);
 logger(`Environment Loaded: ${config.env}`);
 
@@ -51,8 +55,9 @@ const startServer = async () => {
 
         // Start server only in development
         if (config.env === 'development') {
-            app.listen(config.port, () => {
-                logger(`${process.env.APP_NAME} is running on port ${process.env.PORT} - Version: ${process.env.VERSION} - Environment: ${process.env.NODE_ENV || 'development'}`);
+            const port = process.env.PORT || 3031;
+            app.listen(port, () => {
+                logger(`${process.env.APP_NAME} is running on port ${port} - Version: ${process.env.VERSION} - Environment: ${process.env.NODE_ENV || 'development'}`);
             });
         } else {
             logger(`${process.env.APP_NAME} is ready for IIS - Version: ${process.env.VERSION} - Environment: ${process.env.NODE_ENV}`);
