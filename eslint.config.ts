@@ -1,9 +1,29 @@
-const js = require('@eslint/js');
-const typescript = require('@typescript-eslint/eslint-plugin');
-const typescriptParser = require('@typescript-eslint/parser');
+import js from '@eslint/js';
+import typescript from '@typescript-eslint/eslint-plugin';
+import typescriptParser from '@typescript-eslint/parser';
 
-module.exports = [
+export default [
     js.configs.recommended,
+    {
+        files: ['eslint.config.ts'],
+        languageOptions: {
+            globals: {
+                console: 'readonly',
+            },
+        },
+    },
+    {
+        files: ['**/*.js'],
+        languageOptions: {
+            globals: {
+                require: 'readonly',
+                module: 'readonly',
+                exports: 'readonly',
+                process: 'readonly',
+                console: 'readonly',
+            },
+        },
+    },
     {
         files: ['src/**/*.{ts,tsx}'],
         languageOptions: {
@@ -58,4 +78,4 @@ module.exports = [
             },
         },
     },
-];
+]; 
