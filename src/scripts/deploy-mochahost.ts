@@ -44,7 +44,7 @@ const foldersToCopy = [
 const excludeFromSrc = [
   'src/scripts/deploy.ts',
   'src/scripts/deploy-full.ts',
-  'src/scripts/deploy-ftp.ts'
+  'src/scripts/deploy-mochahost.ts'
 ];
 
 console.log('📁 Source directory:', sourceDir);
