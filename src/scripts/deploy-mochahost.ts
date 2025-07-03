@@ -178,16 +178,16 @@ function createDeploymentPackage() {
     console.log('   Expected location: .env.prod');
   }
   
-  // Handle web.config - copy web.config.minimal to web.config
+  // Handle web.config - copy web.config to deployment directory
   console.log('\n🔧 Handling web.config...');
-  const webConfigMinimalPath = path.join(sourceDir, 'web.config.minimal');
+  const webConfigPath = path.join(sourceDir, 'web.config');
   const webConfigDestPath = path.join(deploymentDir, 'web.config');
   
-  if (fs.existsSync(webConfigMinimalPath)) {
-    copyFile(webConfigMinimalPath, webConfigDestPath);
-    console.log('✅ Copied web.config.minimal to web.config for deployment');
+  if (fs.existsSync(webConfigPath)) {
+    copyFile(webConfigPath, webConfigDestPath);
+    console.log('✅ Copied web.config for deployment');
   } else {
-    console.log('⚠️  web.config.minimal not found');
+    console.log('⚠️  web.config not found');
   }
   
   // Copy folders
