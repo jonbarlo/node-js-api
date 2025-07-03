@@ -1,5 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
+import config from './services/configService';
+console.log('INDEX DEBUG:', config);
 
 // Load environment variables from .env file FIRST
 const envPath = path.resolve(process.cwd(), '.env');
@@ -8,7 +10,6 @@ dotenv.config({ path: envPath });
 import express from 'express';
 import cors from 'cors';
 import { logger } from './utils/logger';
-import { config } from './config';
 import { sequelize } from './config/database';
 import userRouter from './routes/users';
 import itemRouter from './routes/items';
@@ -16,7 +17,7 @@ import authRouter from './routes/auth';
 //import { UserController } from './controllers/userController';
 
 logger(`Environment variables loaded from ${envPath}`);
-logger(`Environment Loaded: ${config.env}`);
+logger(`Environment Loaded: ${config.NODE_ENV}`);
 
 // Debug: Log all environment variables
 logger('=== ALL ENVIRONMENT VARIABLES ===');
@@ -27,16 +28,16 @@ Object.keys(process.env).forEach(key => {
 });
 logger('=== END ENVIRONMENT VARIABLES ===');
 
-logger(`- DB_USERNAME: ${process.env.DB_USERNAME}`);
-logger(`- DB_NAME: ${process.env.DB_NAME}`);
-logger(`- DB_HOST: ${process.env.DB_HOST}`);
-logger(`- DB_PORT: ${process.env.DB_PORT}`);
-logger(`- DB_URL: ${process.env.DB_URL}`);
+// logger(`- DB_USERNAME: ${process.env.DB_USERNAME}`);
+// logger(`- DB_NAME: ${process.env.DB_NAME}`);
+// logger(`- DB_HOST: ${process.env.DB_HOST}`);
+// logger(`- DB_PORT: ${process.env.DB_PORT}`);
+// logger(`- DB_URL: ${process.env.DB_URL}`);
 
-logger(`- APP_NAME: ${process.env.APP_NAME}`);
-logger(`- VERSION: ${process.env.VERSION}`);
-logger(`- PORT: ${process.env.PORT}`);
-logger(`- NODE_ENV: ${process.env.NODE_ENV}`);
+// logger(`- APP_NAME: ${process.env.APP_NAME}`);
+// logger(`- VERSION: ${process.env.VERSION}`);
+// logger(`- PORT: ${process.env.PORT}`);
+// logger(`- NODE_ENV: ${process.env.NODE_ENV}`);
 
 const app = express();
 
@@ -45,9 +46,52 @@ app.use(cors());
 app.use(express.json());
 //app.use('/api', routes);
 
+// Add a health check endpoint for IIS
+app.get('/health', (req, res) => {
+    logger('Health check endpoint called');
+    res.status(200).json({ 
+        status: 'OK', 
+        message: 'API is running',
+        environment: config.NODE_ENV,
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Add a root endpoint
+app.get('/', (req, res) => {
+    logger('Root endpoint called');
+    res.status(200).json({ 
+        message: 'Node.js API is running',
+        environment: config.NODE_ENV,
+        version: process.env.VERSION || '1.0.0'
+    });
+});
+
+// Add a simple test endpoint that doesn't require database
+app.get('/test', (req, res) => {
+    logger('Test endpoint called');
+    res.status(200).json({ 
+        message: 'Test endpoint works!',
+        environment: config.NODE_ENV,
+        timestamp: new Date().toISOString(),
+        note: 'This endpoint works without database access'
+    });
+});
+
 app.use('/auth', authRouter);
 app.use(userRouter);
 app.use(itemRouter);
+
+// Global error handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    logger(`Error occurred: ${err.message}`);
+    logger(`Stack trace: ${err.stack}`);
+    res.status(500).json({ 
+        error: 'Internal Server Error',
+        message: err.message,
+        environment: config.NODE_ENV
+    });
+});
 
 // Database connection and server startup
 const startServer = async () => {
@@ -57,13 +101,13 @@ const startServer = async () => {
         logger('Database connection has been established successfully.');
 
         // Sync database (in development)
-        if (config.env === 'development') {
+        if (config.NODE_ENV === 'development') {
             await sequelize.sync({ alter: true });
             logger('Database synchronized.');
         }
 
-        // Start server only in development
-        if (config.env === 'development') {
+        // Start server in development, but in production IIS will handle the server
+        if (config.NODE_ENV === 'development') {
             const port = process.env.PORT || 3031;
             app.listen(port, () => {
                 logger(`${process.env.APP_NAME} is running on port ${port} - Version: ${process.env.VERSION} - Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -72,8 +116,18 @@ const startServer = async () => {
             logger(`${process.env.APP_NAME} is ready for IIS - Version: ${process.env.VERSION} - Environment: ${process.env.NODE_ENV}`);
         }
     } catch (error) {
-        logger(`Unable to connect to the database: ${error}`);
-        process.exit(1);
+        logger(`Database connection failed: ${error}`);
+        logger('Starting server without database connection...');
+        
+        // Start server even if database fails (for testing)
+        if (config.NODE_ENV === 'development') {
+            const port = process.env.PORT || 3031;
+            app.listen(port, () => {
+                logger(`${process.env.APP_NAME} is running on port ${port} (NO DATABASE) - Version: ${process.env.VERSION} - Environment: ${process.env.NODE_ENV || 'development'}`);
+            });
+        } else {
+            logger(`${process.env.APP_NAME} is ready for IIS (NO DATABASE) - Version: ${process.env.VERSION} - Environment: ${process.env.NODE_ENV}`);
+        }
     }
 };
 
