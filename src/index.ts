@@ -96,6 +96,13 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // Database connection and server startup
 const startServer = async () => {
     try {
+        // Log startup conditions
+        logger(`=== SERVER STARTUP ===`);
+        logger(`NODE_ENV: ${config.NODE_ENV}`);
+        logger(`PORT: ${process.env.PORT || 'NOT SET'}`);
+        logger(`APP_NAME: ${process.env.APP_NAME}`);
+        logger(`VERSION: ${process.env.VERSION}`);
+        
         // Test database connection
         await sequelize.authenticate();
         logger('Database connection has been established successfully.');
@@ -106,32 +113,52 @@ const startServer = async () => {
             logger('Database synchronized.');
         }
 
-        // Start server in development, but in production IIS will handle the server
-        if (config.NODE_ENV === 'development') {
+        // Start server if PORT is provided (Railway, Heroku, etc.) or in development
+        if (process.env.PORT || config.NODE_ENV === 'development') {
             const port = process.env.PORT || 3031;
+            logger(`Starting server on port ${port}...`);
             app.listen(port, () => {
-                logger(`${process.env.APP_NAME} is running on port ${port} - Version: ${process.env.VERSION} - Environment: ${process.env.NODE_ENV || 'development'}`);
+                logger(`✅ ${process.env.APP_NAME || 'Node.js API'} is running on port ${port} - Version: ${process.env.VERSION || '1.0.0'} - Environment: ${process.env.NODE_ENV || 'development'}`);
+                logger(`✅ Health check available at: http://localhost:${port}/health`);
             });
         } else {
-            logger(`${process.env.APP_NAME} is ready for IIS - Version: ${process.env.VERSION} - Environment: ${process.env.NODE_ENV}`);
+            // IIS mode - export app for iisnode
+            logger(`📋 ${process.env.APP_NAME || 'Node.js API'} is ready for IIS - Version: ${process.env.VERSION || '1.0.0'} - Environment: ${process.env.NODE_ENV}`);
+            logger(`📋 No PORT set, exporting app for iisnode`);
         }
     } catch (error) {
-        logger(`Database connection failed: ${error}`);
+        logger(`❌ Database connection failed: ${error}`);
         logger('Starting server without database connection...');
         
         // Start server even if database fails (for testing)
-        if (config.NODE_ENV === 'development') {
+        if (process.env.PORT || config.NODE_ENV === 'development') {
             const port = process.env.PORT || 3031;
+            logger(`Starting server on port ${port} (NO DATABASE)...`);
             app.listen(port, () => {
-                logger(`${process.env.APP_NAME} is running on port ${port} (NO DATABASE) - Version: ${process.env.VERSION} - Environment: ${process.env.NODE_ENV || 'development'}`);
+                logger(`✅ ${process.env.APP_NAME || 'Node.js API'} is running on port ${port} (NO DATABASE) - Version: ${process.env.VERSION || '1.0.0'} - Environment: ${process.env.NODE_ENV || 'development'}`);
+                logger(`✅ Health check available at: http://localhost:${port}/health`);
             });
         } else {
-            logger(`${process.env.APP_NAME} is ready for IIS (NO DATABASE) - Version: ${process.env.VERSION} - Environment: ${process.env.NODE_ENV}`);
+            // IIS mode - export app for iisnode
+            logger(`📋 ${process.env.APP_NAME || 'Node.js API'} is ready for IIS (NO DATABASE) - Version: ${process.env.VERSION || '1.0.0'} - Environment: ${process.env.NODE_ENV}`);
+            logger(`📋 No PORT set, exporting app for iisnode`);
         }
     }
 };
 
+logger('🚀 About to start server...');
 startServer();
+logger('🚀 startServer() called - check if it executed properly');
+
+// Fallback: If PORT is set, ensure server starts (for Railway)
+if (process.env.PORT) {
+    const port = process.env.PORT;
+    logger(`🔄 Fallback: Starting server on port ${port}...`);
+    app.listen(port, () => {
+        logger(`✅ FALLBACK: Server is running on port ${port}`);
+        logger(`✅ Health check available at: http://localhost:${port}/health`);
+    });
+}
 
 // Export the app for IIS
 export default app;
